@@ -44,7 +44,30 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.values = util.Counter() # A Counter is a dict with default 0
 
         # Write value iteration code here
-        "*** YOUR CODE HERE ***"
+        #For every iteration...
+        for x in range(self.iterations):
+            #Copy needed to not completely overwrite the Counter
+            tempValues = self.values.copy()
+
+            #For every single state calculate the best possible action via the highest Q-Value
+            for state in self.mdp.getStates():
+                #If it's a terminal state, no action can be computed, so skip
+                if self.mdp.isTerminal(state):
+                    continue
+
+                #List of possible actions at the state
+                tempActions = self.mdp.getPossibleActions(state)
+                #set the current state's value to the best action via highest Q-Value as indicated in lecture slides 
+                maxQValue = None
+                for action in tempActions:
+                    qValue = self.getQValue(state, action)
+                    if qValue >= maxQValue:
+                        maxQValue = qValue
+                #Set the Counter dictionary's value at <state> to the found maxQValue
+                tempValues[state] = maxQValue
+            
+            #Finally after iterating through every state set the current Counter to the new counter where all states are set to maximum Q-Value actions
+            self.values = tempValues
 
 
     def getValue(self, state):
@@ -59,8 +82,12 @@ class ValueIterationAgent(ValueEstimationAgent):
           Compute the Q-value of action in state from the
           value function stored in self.values.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        qValue = 0
+        for nextState, transition in self.mdp.getTransitionStatesAndProbs(state, action):
+            #qValue += transition * ((discount * value) + reward)
+            #qValue += T(s,a,s') * ((reward * V(s')) + R(s,a,s'))
+            qValue += transition * ((self.values[nextState] * self.discount) + self.mdp.getReward(state, action, nextState))
+        return qValue
 
     def computeActionFromValues(self, state):
         """
@@ -71,8 +98,20 @@ class ValueIterationAgent(ValueEstimationAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return None.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        #If current state is a terminal state, best to return is do nothing
+        if self.mdp.isTerminal(state):
+            return None
+
+        #Otherwise find the best possible action via Q-Value
+        values = util.Counter()
+        actions = self.mdp.getPossibleActions(state)
+        for action in actions:
+            values[action] = self.getQValue(state, action)
+
+        #Return the action with the largest Q-Value
+        return values.argMax()
+        
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
