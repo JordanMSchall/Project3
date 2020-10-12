@@ -43,6 +43,11 @@ class QLearningAgent(ReinforcementAgent):
         ReinforcementAgent.__init__(self, **args)
 
         "*** YOUR CODE HERE ***"
+        # Use counter here for future use of helper dict methods
+        # Great reference for this agent found here
+        # https://towardsdatascience.com/a-beginners-guide-to-q-learning-c3e2a30a653c
+        # For reference to the above article the below counter is our "Q-Table" implementation
+        self.qValues = util.Counter()
 
     def getQValue(self, state, action):
         """
@@ -51,7 +56,9 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Simply get the q-value of this state and action
+        # from our "Q-table"
+        return self.qValues[(state,action)]
 
 
     def computeValueFromQValues(self, state):
@@ -62,7 +69,17 @@ class QLearningAgent(ReinforcementAgent):
           terminal state, you should return a value of 0.0.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        legalActions = self.getLegalActions(state)
+        # See Above
+        if not legalActions:
+            return 0.0
+        # Using chad's implementation of least possible value.
+        maxAction = float('-Inf')
+        for action in legalActions:
+            # Use above implemented q-value getter and compare
+            maxAction = max(maxAction, self.getQValue(state,action))
+        return maxAction
+
 
     def computeActionFromQValues(self, state):
         """
@@ -71,7 +88,32 @@ class QLearningAgent(ReinforcementAgent):
           you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        legalActions = self.getLegalActions(state)
+        bestAction = None
+        if not legalActions:
+            return bestAction
+
+        # First: Initialize maxQValue as first legal Action then
+        # see if there are other  actions that have a greater or equal
+        # q-value. If equal then  we break the tie using random.choice() mentioned
+        # in project 3 notes. Or else set the return action to the best q-value action
+        returnAction = legalActions[0]
+        maxQValue = self.getQValue(state, returnAction)
+
+        #Find true max qValue
+        for action in legalActions:
+            actionQValue = self.getQValue(state, action)
+            if actionQValue > maxQValue:
+                maxQValue = actionQValue
+                returnAction = action
+            elif actionQValue == maxQValue:
+                returnAction = random.choice([returnAction, action])
+
+        return returnAction
+
+
+
+
 
     def getAction(self, state):
         """
@@ -107,7 +149,16 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        currentQValue = self.qValues[(state,action)]
+        # The new value is calculated by discounting the next states value
+        # and then adding the new reward
+
+        derivedQValue = self.getValue(nextState) * self.discount + reward
+
+        # We then update the q-value for this state, action pair
+        # using the learning rate formula below
+        self.qValues[(state, action)] = (1.0 - self.alpha) * currentQValue + self.alpha * derivedQValue
+
 
     def getPolicy(self, state):
         return self.computeActionFromQValues(state)

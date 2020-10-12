@@ -49,3 +49,9 @@ learningAgents.py	Defines the base classes ValueEstimationAgent and QLearningAge
 util.py	Utilities, including util.Counter, which is particularly useful for Q-learners.
 gridworld.py	The Gridworld implementation.
 featureExtractors.py	Classes for extracting features on (state,action) pairs. Used for the approximate Q-learning agent (in qlearningAgents.py).
+
+Q4 Notes
+update, computeValueFromQValues, getQValue, and computeActionFromQValues methods.
+python autograder.py -q q4
+
+
