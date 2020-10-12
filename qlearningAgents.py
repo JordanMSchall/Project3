@@ -47,7 +47,7 @@ class QLearningAgent(ReinforcementAgent):
         # Great reference for this agent found here
         # https://towardsdatascience.com/a-beginners-guide-to-q-learning-c3e2a30a653c
         # For reference to the above article the below counter is our "Q-Table" implementation
-        self.qValues = util.Counter()
+        self.Q_VALUE_TABLE = util.Counter()
 
     def getQValue(self, state, action):
         """
@@ -58,7 +58,7 @@ class QLearningAgent(ReinforcementAgent):
         "*** YOUR CODE HERE ***"
         # Simply get the q-value of this state and action
         # from our "Q-table"
-        return self.qValues[(state,action)]
+        return self.Q_VALUE_TABLE[(state,action)]
 
 
     def computeValueFromQValues(self, state):
@@ -149,15 +149,16 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
-        currentQValue = self.qValues[(state,action)]
+        currentQValue = self.Q_VALUE_TABLE[(state,action)]
         # The new value is calculated by discounting the next states value
         # and then adding the new reward
 
         derivedQValue = self.getValue(nextState) * self.discount + reward
 
         # We then update the q-value for this state, action pair
-        # using the learning rate formula below
-        self.qValues[(state, action)] = (1.0 - self.alpha) * currentQValue + self.alpha * derivedQValue
+        # using the learning rate formula below found in RL2 lecture @ 10:05
+        # ( 1 - alpha) QValue + alpha * Q**
+        self.Q_VALUE_TABLE[(state, action)] = (1.0 - self.alpha) * currentQValue + self.alpha * derivedQValue
 
 
     def getPolicy(self, state):
