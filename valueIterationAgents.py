@@ -42,7 +42,9 @@ class ValueIterationAgent(ValueEstimationAgent):
         self.discount = discount
         self.iterations = iterations
         self.values = util.Counter() # A Counter is a dict with default 0
+        self.runValueIteration()
 
+    def runValueIteration(self):
         # Write value iteration code here
         #For every iteration...
         for x in range(self.iterations):
@@ -152,12 +154,19 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
-        #Formula to use is V,k+1(state) = maxAction( SUM( T(state, action, state') * ( R(state, action, state') + discount * V,c(state')
-        mdp = self.mdp
         states = self.mdp.getStates()
+        #Go through each iteration k, iterations is an arguement so we need it to be iterable hence the range
+        for i in range(self.iterations):
+            # Method to update "only one state in each iteration", this could aslo be implemented
+            # using a for loop through states but this method is much more straight forward.
+            state = states[i % len(states)]
+            # Find action for chosen state
+            action = self.computeActionFromValues(state)
+            #Check if action exists
+            if action:
+                # Update values by computing qValue
+                self.values[state] = self.computeQValueFromValues(state, action)
 
-        for state in self.iterations:
-            pass
 
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
@@ -179,4 +188,3 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
-
