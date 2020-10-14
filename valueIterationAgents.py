@@ -58,7 +58,7 @@ class ValueIterationAgent(ValueEstimationAgent):
                 #List of possible actions at the state
                 tempActions = self.mdp.getPossibleActions(state)
                 #set the current state's value to the best action via highest Q-Value as indicated in lecture slides
-                maxQValue = None
+                maxQValue = float('-Inf')
                 for action in tempActions:
                     qValue = self.getQValue(state, action)
                     if qValue >= maxQValue:
