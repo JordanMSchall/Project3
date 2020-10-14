@@ -19,6 +19,7 @@
 # Set the given parameters to obtain the specified policies through
 # value iteration.
 
+
 def question2():
     answerDiscount = 0.9
     # No matter the discount rate of the reward there
@@ -59,14 +60,15 @@ def question3e():
 
 def question6():
     return 'NOT POSSIBLE'
-    answerEpsilon = None
-    answerLearningRate = None
-    return answerEpsilon, answerLearningRate
+    # If not possible, return 'NOT POSSIBLE'
+
+def question8():
+    return 'NOT POSSIBLE'
     # If not possible, return 'NOT POSSIBLE'
 
 if __name__ == '__main__':
-    print 'Answers to analysis questions:'
+    print('Answers to analysis questions:')
     import analysis
     for q in [q for q in dir(analysis) if q.startswith('question')]:
         response = getattr(analysis, q)()
-        print '  Question %s:\t%s' % (q, str(response))
+        print('  Question %s:\t%s' % (q, str(response)))

@@ -16,10 +16,11 @@ import testClasses
 import random, math, traceback, sys, os
 import layout, textDisplay, pacman, gridworld
 import time
-from util import Counter, TimeoutFunction, FixedRandom
+from util import Counter, TimeoutFunction, FixedRandom, Experiences
 from collections import defaultdict
 from pprint import PrettyPrinter
 from hashlib import sha1
+from functools import reduce
 pp = PrettyPrinter()
 VERBOSE = False
 
@@ -38,7 +39,7 @@ class ValueIterationTest(testClasses.TestCase):
         if 'noise' in testDict: self.grid.setNoise(float(testDict['noise']))
         if 'livingReward' in testDict: self.grid.setLivingReward(float(testDict['livingReward']))
         maxPreIterations = 10
-        self.numsIterationsForDisplay = range(min(iterations, maxPreIterations))
+        self.numsIterationsForDisplay = list(range(min(iterations, maxPreIterations)))
         self.testOutFile = testDict['test_out_file']
         if maxPreIterations < iterations:
             self.numsIterationsForDisplay.append(iterations)
@@ -131,7 +132,7 @@ class ValueIterationTest(testClasses.TestCase):
             policy[state] = agent.computeActionFromValues(state)
             possibleActions = self.grid.getPossibleActions(state)
             for action in actions:
-                if not qValues.has_key(action):
+                if action not in qValues:
                     qValues[action] = {}
                 if action in possibleActions:
                     qValues[action][state] = agent.computeQValueFromValues(state, action)
@@ -195,6 +196,58 @@ class ValueIterationTest(testClasses.TestCase):
         return values
 
 
+class AsynchronousValueIterationTest(ValueIterationTest):
+    def runAgent(self, moduleDict, numIterations):
+        agent = moduleDict['valueIterationAgents'].AsynchronousValueIterationAgent(self.grid, discount=self.discount, iterations=numIterations)
+        states = self.grid.getStates()
+        actions = list(reduce(lambda a, b: set(a).union(b), [self.grid.getPossibleActions(state) for state in states]))
+        values = {}
+        qValues = {}
+        policy = {}
+        for state in states:
+            values[state] = agent.getValue(state)
+            policy[state] = agent.computeActionFromValues(state)
+            possibleActions = self.grid.getPossibleActions(state)
+            for action in actions:
+                if action not in qValues:
+                    qValues[action] = {}
+                if action in possibleActions:
+                    qValues[action][state] = agent.computeQValueFromValues(state, action)
+                else:
+                    qValues[action][state] = None
+        valuesPretty = self.prettyValues(values)
+        policyPretty = self.prettyPolicy(policy)
+        qValuesPretty = {}
+        for action in actions:
+            qValuesPretty[action] = self.prettyValues(qValues[action])
+        return (valuesPretty, qValuesPretty, actions, policyPretty)
+
+class PrioritizedSweepingValueIterationTest(ValueIterationTest):
+    def runAgent(self, moduleDict, numIterations):
+        agent = moduleDict['valueIterationAgents'].PrioritizedSweepingValueIterationAgent(self.grid, discount=self.discount, iterations=numIterations)
+        states = self.grid.getStates()
+        actions = list(reduce(lambda a, b: set(a).union(b), [self.grid.getPossibleActions(state) for state in states]))
+        values = {}
+        qValues = {}
+        policy = {}
+        for state in states:
+            values[state] = agent.getValue(state)
+            policy[state] = agent.computeActionFromValues(state)
+            possibleActions = self.grid.getPossibleActions(state)
+            for action in actions:
+                if action not in qValues:
+                    qValues[action] = {}
+                if action in possibleActions:
+                    qValues[action][state] = agent.computeQValueFromValues(state, action)
+                else:
+                    qValues[action][state] = None
+        valuesPretty = self.prettyValues(values)
+        policyPretty = self.prettyPolicy(policy)
+        qValuesPretty = {}
+        for action in actions:
+            qValuesPretty[action] = self.prettyValues(qValues[action])
+        return (valuesPretty, qValuesPretty, actions, policyPretty)
+
 class ApproximateQLearningTest(testClasses.TestCase):
 
     def __init__(self, question, testDict):
@@ -213,8 +266,13 @@ class ApproximateQLearningTest(testClasses.TestCase):
         self.opts = {'actionFn': self.env.getPossibleActions, 'epsilon': self.epsilon, 'gamma': self.discount, 'alpha': self.learningRate}
         numExperiences = int(testDict['numExperiences'])
         maxPreExperiences = 10
-        self.numsExperiencesForDisplay = range(min(numExperiences, maxPreExperiences))
+        self.numsExperiencesForDisplay = list(range(min(numExperiences, maxPreExperiences)))
         self.testOutFile = testDict['test_out_file']
+        if sys.platform == 'win32':
+            _, question_name, test_name = testDict['test_out_file'].split('\\')
+        else:
+            _, question_name, test_name = testDict['test_out_file'].split('/')
+        self.experiences = Experiences(test_name.split('.')[0])
         if maxPreExperiences < numExperiences:
             self.numsExperiencesForDisplay.append(numExperiences)
 
@@ -278,17 +336,11 @@ class ApproximateQLearningTest(testClasses.TestCase):
 
     def runAgent(self, moduleDict, numExperiences):
         agent = moduleDict['qlearningAgents'].ApproximateQAgent(extractor=self.extractor, **self.opts)
-        states = filter(lambda state : len(self.grid.getPossibleActions(state)) > 0, self.grid.getStates())
+        states = [state for state in self.grid.getStates() if len(self.grid.getPossibleActions(state)) > 0]
         states.sort()
-        randObj = FixedRandom().random
-        # choose a random start state and a random possible action from that state
-        # get the next state and reward from the transition function
         lastExperience = None
         for i in range(numExperiences):
-            startState = randObj.choice(states)
-            action = randObj.choice(self.grid.getPossibleActions(startState))
-            (endState, reward) = self.env.getRandomNextState(startState, action, randObj=randObj)
-            lastExperience = (startState, action, endState, reward)
+            lastExperience = self.experiences.get_experience()
             agent.update(*lastExperience)
         actions = list(reduce(lambda a, b: set(a).union(b), [self.grid.getPossibleActions(state) for state in states]))
         qValues = {}
@@ -296,7 +348,7 @@ class ApproximateQLearningTest(testClasses.TestCase):
         for state in states:
             possibleActions = self.grid.getPossibleActions(state)
             for action in actions:
-                if not qValues.has_key(action):
+                if action not in qValues:
                     qValues[action] = {}
                 if action in possibleActions:
                     qValues[action][state] = agent.getQValue(state, action)
@@ -373,8 +425,13 @@ class QLearningTest(testClasses.TestCase):
         self.opts = {'actionFn': self.env.getPossibleActions, 'epsilon': self.epsilon, 'gamma': self.discount, 'alpha': self.learningRate}
         numExperiences = int(testDict['numExperiences'])
         maxPreExperiences = 10
-        self.numsExperiencesForDisplay = range(min(numExperiences, maxPreExperiences))
+        self.numsExperiencesForDisplay = list(range(min(numExperiences, maxPreExperiences)))
         self.testOutFile = testDict['test_out_file']
+        if sys.platform == 'win32':
+            _, question_name, test_name = testDict['test_out_file'].split('\\')
+        else:
+            _, question_name, test_name = testDict['test_out_file'].split('/')
+        self.experiences = Experiences(test_name.split('.')[0])
         if maxPreExperiences < numExperiences:
             self.numsExperiencesForDisplay.append(numExperiences)
 
@@ -406,15 +463,19 @@ class QLearningTest(testClasses.TestCase):
         testPass = True
         valuesPretty, qValuesPretty, actions, policyPretty, lastExperience = self.runAgent(moduleDict, n)
         stdOutString = ''
-        fileOutString = "==================== Iteration %d ====================\n" % n
+        # fileOutString = "==================== Iteration %d ====================\n" % n
+        fileOutString = ''
         if lastExperience is not None:
-            fileOutString += "Agent observed the transition (startState = %s, action = %s, endState = %s, reward = %f)\n\n\n" % lastExperience
+            # fileOutString += "Agent observed the transition (startState = %s, action = %s, endState = %s, reward = %f)\n\n\n" % lastExperience
+            pass
         for action in actions:
             qValuesKey = 'q_values_k_%d_action_%s' % (n, action)
             qValues = qValuesPretty[action]
+
             if self.comparePrettyValues(qValues, solutionDict[qValuesKey]):
-                fileOutString += "Q-Values at iteration %d for action '%s' are correct." % (n, action)
-                fileOutString += "   Student/correct solution:\n\t%s" % self.prettyValueSolutionString(qValuesKey, qValues)
+                # fileOutString += "Q-Values at iteration %d for action '%s' are correct." % (n, action)
+                # fileOutString += "   Student/correct solution:\n\t%s" % self.prettyValueSolutionString(qValuesKey, qValues)
+                pass
             else:
                 testPass = False
                 outString = "Q-Values at iteration %d for action '%s' are NOT correct." % (n, action)
@@ -453,17 +514,11 @@ class QLearningTest(testClasses.TestCase):
 
     def runAgent(self, moduleDict, numExperiences):
         agent = moduleDict['qlearningAgents'].QLearningAgent(**self.opts)
-        states = filter(lambda state : len(self.grid.getPossibleActions(state)) > 0, self.grid.getStates())
+        states = [state for state in self.grid.getStates() if len(self.grid.getPossibleActions(state)) > 0]
         states.sort()
-        randObj = FixedRandom().random
-        # choose a random start state and a random possible action from that state
-        # get the next state and reward from the transition function
         lastExperience = None
         for i in range(numExperiences):
-            startState = randObj.choice(states)
-            action = randObj.choice(self.grid.getPossibleActions(startState))
-            (endState, reward) = self.env.getRandomNextState(startState, action, randObj=randObj)
-            lastExperience = (startState, action, endState, reward)
+            lastExperience = self.experiences.get_experience()
             agent.update(*lastExperience)
         actions = list(reduce(lambda a, b: set(a).union(b), [self.grid.getPossibleActions(state) for state in states]))
         values = {}
@@ -474,7 +529,7 @@ class QLearningTest(testClasses.TestCase):
             policy[state] = agent.computeActionFromQValues(state)
             possibleActions = self.grid.getPossibleActions(state)
             for action in actions:
-                if not qValues.has_key(action):
+                if action not in qValues:
                     qValues[action] = {}
                 if action in possibleActions:
                     qValues[action][state] = agent.getQValue(state, action)
@@ -554,6 +609,11 @@ class EpsilonGreedyTest(testClasses.TestCase):
         self.numExperiences = int(testDict['numExperiences'])
         self.numIterations = int(testDict['iterations'])
         self.opts = {'actionFn': self.env.getPossibleActions, 'epsilon': self.epsilon, 'gamma': self.discount, 'alpha': self.learningRate}
+        if sys.platform == 'win32':
+            _, question_name, test_name = testDict['test_out_file'].split('\\')
+        else:
+            _, question_name, test_name = testDict['test_out_file'].split('/')
+        self.experiences = Experiences(test_name.split('.')[0])
 
     def execute(self, grades, moduleDict, solutionDict):
         if self.testEpsilonGreedy(moduleDict):
@@ -569,16 +629,11 @@ class EpsilonGreedyTest(testClasses.TestCase):
 
     def runAgent(self, moduleDict):
         agent = moduleDict['qlearningAgents'].QLearningAgent(**self.opts)
-        states = filter(lambda state : len(self.grid.getPossibleActions(state)) > 0, self.grid.getStates())
+        states = [state for state in self.grid.getStates() if len(self.grid.getPossibleActions(state)) > 0]
         states.sort()
-        randObj = FixedRandom().random
-        # choose a random start state and a random possible action from that state
-        # get the next state and reward from the transition function
         for i in range(self.numExperiences):
-            startState = randObj.choice(states)
-            action = randObj.choice(self.grid.getPossibleActions(startState))
-            (endState, reward) = self.env.getRandomNextState(startState, action, randObj=randObj)
-            agent.update(startState, action, endState, reward)
+            lastExperience = self.experiences.get_experience()
+            agent.update(*lastExperience)
         return agent
 
     def testEpsilonGreedy(self, moduleDict, tolerance=0.025):
@@ -606,16 +661,16 @@ class EpsilonGreedyTest(testClasses.TestCase):
         return True
 
 
-### q6
-class Question6Test(testClasses.TestCase):
+### q8
+class Question8Test(testClasses.TestCase):
 
     def __init__(self, question, testDict):
-        super(Question6Test, self).__init__(question, testDict)
+        super(Question8Test, self).__init__(question, testDict)
 
     def execute(self, grades, moduleDict, solutionDict):
-        studentSolution = moduleDict['analysis'].question6()
+        studentSolution = moduleDict['analysis'].question8()
         studentSolution = str(studentSolution).strip().lower()
-        hashedSolution = sha1(studentSolution).hexdigest()
+        hashedSolution = sha1(studentSolution.encode('utf-8')).hexdigest()
         if hashedSolution == '46729c96bb1e4081fdc81a8ff74b3e5db8fba415':
             return self.testPass(grades)
         else:
@@ -901,7 +956,7 @@ class GridPolicyTest(testClasses.TestCase):
 
     def printPolicy(self, policy, policyTypeIsGrid):
         if policyTypeIsGrid:
-            legend = {'N': 'N', 'E': 'E', 'S': 'S', 'W': 'W', ' ': '_'}
+            legend = {'N': 'N', 'E': 'E', 'S': 'S', 'W': 'W', ' ': '_', 'X': 'X', '.': '.'}
         else:
             legend = {'north': 'N', 'east': 'E', 'south': 'S', 'west': 'W', 'exit': 'X', '.': '.', ' ': '_'}
 
