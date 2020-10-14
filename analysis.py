@@ -21,7 +21,10 @@
 
 def question2():
     answerDiscount = 0.9
-    answerNoise = 0.2
+    # No matter the discount rate of the reward there
+    # must be zero noise because the optimal policy does
+    # not cross the bridge
+    answerNoise = 0.0
     return answerDiscount, answerNoise
 
 def question3a():
@@ -55,6 +58,7 @@ def question3e():
     return answerDiscount, answerNoise, answerLivingReward
 
 def question6():
+    return 'NOT POSSIBLE'
     answerEpsilon = None
     answerLearningRate = None
     return answerEpsilon, answerLearningRate
