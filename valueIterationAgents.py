@@ -152,6 +152,13 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
 
     def runValueIteration(self):
         "*** YOUR CODE HERE ***"
+        #Formula to use is V,k+1(state) = maxAction( SUM( T(state, action, state') * ( R(state, action, state') + discount * V,c(state')
+        mdp = self.mdp
+        states = self.mdp.getStates()
+
+        for state in self.iterations:
+            pass
+
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
