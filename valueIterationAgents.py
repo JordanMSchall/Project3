@@ -57,7 +57,7 @@ class ValueIterationAgent(ValueEstimationAgent):
 
                 #List of possible actions at the state
                 tempActions = self.mdp.getPossibleActions(state)
-                #set the current state's value to the best action via highest Q-Value as indicated in lecture slides 
+                #set the current state's value to the best action via highest Q-Value as indicated in lecture slides
                 maxQValue = None
                 for action in tempActions:
                     qValue = self.getQValue(state, action)
@@ -65,7 +65,7 @@ class ValueIterationAgent(ValueEstimationAgent):
                         maxQValue = qValue
                 #Set the Counter dictionary's value at <state> to the found maxQValue
                 tempValues[state] = maxQValue
-            
+
             #Finally after iterating through every state set the current Counter to the new counter where all states are set to maximum Q-Value actions
             self.values = tempValues
 
@@ -111,7 +111,7 @@ class ValueIterationAgent(ValueEstimationAgent):
 
         #Return the action with the largest Q-Value
         return values.argMax()
-        
+
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
@@ -122,3 +122,54 @@ class ValueIterationAgent(ValueEstimationAgent):
 
     def getQValue(self, state, action):
         return self.computeQValueFromValues(state, action)
+
+class AsynchronousValueIterationAgent(ValueIterationAgent):
+    """
+        * Please read learningAgents.py before reading this.*
+
+        An AsynchronousValueIterationAgent takes a Markov decision process
+        (see mdp.py) on initialization and runs cyclic value iteration
+        for a given number of iterations using the supplied
+        discount factor.
+    """
+    def __init__(self, mdp, discount = 0.9, iterations = 1000):
+        """
+          Your cyclic value iteration agent should take an mdp on
+          construction, run the indicated number of iterations,
+          and then act according to the resulting policy. Each iteration
+          updates the value of only one state, which cycles through
+          the states list. If the chosen state is terminal, nothing
+          happens in that iteration.
+
+          Some useful mdp methods you will use:
+              mdp.getStates()
+              mdp.getPossibleActions(state)
+              mdp.getTransitionStatesAndProbs(state, action)
+              mdp.getReward(state)
+              mdp.isTerminal(state)
+        """
+        ValueIterationAgent.__init__(self, mdp, discount, iterations)
+
+    def runValueIteration(self):
+        "*** YOUR CODE HERE ***"
+
+class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
+    """
+        * Please read learningAgents.py before reading this.*
+
+        A PrioritizedSweepingValueIterationAgent takes a Markov decision process
+        (see mdp.py) on initialization and runs prioritized sweeping value iteration
+        for a given number of iterations using the supplied parameters.
+    """
+    def __init__(self, mdp, discount = 0.9, iterations = 100, theta = 1e-5):
+        """
+          Your prioritized sweeping value iteration agent should take an mdp on
+          construction, run the indicated number of iterations,
+          and then act according to the resulting policy.
+        """
+        self.theta = theta
+        ValueIterationAgent.__init__(self, mdp, discount, iterations)
+
+    def runValueIteration(self):
+        "*** YOUR CODE HERE ***"
+

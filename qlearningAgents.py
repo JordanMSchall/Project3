@@ -21,19 +21,16 @@ import random,util,math
 class QLearningAgent(ReinforcementAgent):
     """
       Q-Learning Agent
-
       Functions you should fill in:
         - computeValueFromQValues
         - computeActionFromQValues
         - getQValue
         - getAction
         - update
-
       Instance variables you have access to
         - self.epsilon (exploration prob)
         - self.alpha (learning rate)
         - self.discount (discount rate)
-
       Functions you should use
         - self.getLegalActions(state)
           which returns legal actions for a state
@@ -122,7 +119,6 @@ class QLearningAgent(ReinforcementAgent):
           take the best policy action otherwise.  Note that if there are
           no legal actions, which is the case at the terminal state, you
           should choose None as the action.
-
           HINT: You might want to use util.flipCoin(prob)
           HINT: To pick randomly from a list, use random.choice(list)
         """
@@ -144,7 +140,6 @@ class QLearningAgent(ReinforcementAgent):
           The parent class calls this to observe a
           state = action => nextState and reward transition.
           You should do your Q-Value update here
-
           NOTE: You should never call this function,
           it will be called on your behalf
         """
@@ -176,7 +171,6 @@ class PacmanQAgent(QLearningAgent):
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
             python pacman.py -p PacmanQLearningAgent -a epsilon=0.1
-
         alpha    - learning rate
         epsilon  - exploration rate
         gamma    - discount factor
@@ -203,7 +197,6 @@ class PacmanQAgent(QLearningAgent):
 class ApproximateQAgent(PacmanQAgent):
     """
        ApproximateQLearningAgent
-
        You should only have to overwrite getQValue
        and update.  All other QLearningAgent functions
        should work as is.
@@ -258,4 +251,4 @@ class ApproximateQAgent(PacmanQAgent):
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
             for weight in self.weights:
-                print "Weight: %s", str(weight)
+                print( "Weight: %s", str(weight))
